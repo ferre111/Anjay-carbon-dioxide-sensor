@@ -23,6 +23,7 @@
 #include "nvs_flash.h"
 #include "sdkconfig.h"
 #include <string.h>
+#include "driver/gpio.h"
 
 #include "lwip/dns.h"
 #include "lwip/err.h"
@@ -42,6 +43,8 @@
 #include "firmware_update.h"
 #include "lcd.h"
 #include "main.h"
+#include "pasco2.h"
+#include "oled.h"
 #include "objects/objects.h"
 
 #include "firmware_update.h"
@@ -77,6 +80,7 @@ static char ENDPOINT_NAME[ANJAY_MAX_PK_OR_IDENTITY_SIZE];
 static const anjay_dm_object_def_t **DEVICE_OBJ;
 static const anjay_dm_object_def_t **PUSH_BUTTON_OBJ;
 static const anjay_dm_object_def_t **LIGHT_CONTROL_OBJ;
+static const anjay_dm_object_def_t **AIR_QUALITY_OBJ;
 #ifdef CONFIG_ANJAY_CLIENT_INTERFACE_ONBOARD_WIFI
 static const anjay_dm_object_def_t **WLAN_OBJ;
 #endif // CONFIG_ANJAY_CLIENT_INTERFACE_ONBOARD_WIFI
@@ -91,6 +95,8 @@ static avs_sched_handle_t change_config_job_handle;
 static int read_anjay_config();
 #ifdef CONFIG_ANJAY_CLIENT_INTERFACE_ONBOARD_WIFI
 static void change_config_job(avs_sched_t *sched, const void *args_ptr);
+
+static xSemaphoreHandle GPIOSemaphore = NULL;
 
 void schedule_change_config() {
     AVS_SCHED_NOW(anjay_get_scheduler(anjay), &change_config_job_handle,
@@ -322,6 +328,10 @@ static void anjay_init(void) {
         anjay_register_object(anjay, PUSH_BUTTON_OBJ);
     }
 
+    if ((AIR_QUALITY_OBJ = air_quality_object_create())) {
+        anjay_register_object(anjay, AIR_QUALITY_OBJ);
+    }
+
 #ifdef CONFIG_ANJAY_CLIENT_INTERFACE_ONBOARD_WIFI
     if ((WLAN_OBJ = wlan_object_create())) {
         anjay_register_object(anjay, WLAN_OBJ);
@@ -349,6 +359,41 @@ static void anjay_task(void *pvParameters) {
         fw_update_reboot();
     }
 }
+
+#if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+static void air_quality_task(void *pvParameters) {
+    uint16_t co2_val = 0;
+
+    while(pasco2_init()) {
+        avs_log(tutorial, ERROR, "PASCO2 init failed");
+        vTaskDelay(400);
+    }
+    avs_log(tutorial, INFO, "PASCO2 init done");
+
+    for(;;) {
+        xSemaphoreTake(GPIOSemaphore, portMAX_DELAY);
+        avs_log(tutorial, INFO, "Przerwańsko occured");
+        if (!pasco2_is_measur_rdy()) {
+            pasco2_get_measur_val(&co2_val);
+            avs_log(tutorial, INFO, "CO2 value: %uppm", co2_val);
+            air_quality_update_measurment_val(anjay, AIR_QUALITY_OBJ, co2_val);
+            OLED_update();
+        } else {
+            avs_log(tutorial, INFO, "Measurment not ready");
+        }
+        for (uint8_t i = 0; i < 10; i++) {
+            if (!pasco2_reset_int_status_clear()) {
+                break;
+            }
+            vTaskDelay(pdMS_TO_TICKS(100));
+        }
+    }
+}
+
+static void IRAM_ATTR gpio_isr_handler(void* arg) {
+    xSemaphoreGiveFromISR(GPIOSemaphore, pdFALSE);
+}
+#endif
 
 static void
 log_handler(avs_log_level_t level, const char *module, const char *msg) {
@@ -541,6 +586,9 @@ void app_main(void) {
     avs_log_set_handler(log_handler);
 
     avs_log_set_default_level(AVS_LOG_TRACE);
+
+    OLED_Init();
+    OLED_setDisplayOn();
     anjay_init();
 
 #if CONFIG_ANJAY_CLIENT_LCD
@@ -551,6 +599,25 @@ void app_main(void) {
     lcd_write_connection_status(LCD_CONNECTION_STATUS_WIFI_CONNECTING);
 #    endif // CONFIG_ANJAY_CLIENT_INTERFACE_BG96_MODULE
 #endif     // CONFIG_ANJAY_CLIENT_LCD
+
+#if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+    gpio_config_t io_conf = {
+        .pin_bit_mask = (1 << GPIO_NUM_1),
+        //interrupt on falling edge
+        .intr_type = GPIO_INTR_DISABLE,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = true,
+    };
+    gpio_config(&io_conf);
+
+    gpio_set_intr_type(GPIO_NUM_1, GPIO_INTR_NEGEDGE);
+    //install gpio isr service
+    gpio_install_isr_service(0);
+    //hook isr handler for specific gpio pin
+    gpio_isr_handler_add(GPIO_NUM_1, gpio_isr_handler, NULL);
+
+    vSemaphoreCreateBinary(GPIOSemaphore);
+#endif
 
 #if defined(CONFIG_ANJAY_CLIENT_INTERFACE_BG96_MODULE)
     while (!setupCellular()) {
@@ -590,4 +657,7 @@ void app_main(void) {
 #endif     // CONFIG_ANJAY_CLIENT_LCD
 
     xTaskCreate(&anjay_task, "anjay_task", 16384, NULL, 5, NULL);
+#if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+    xTaskCreate(&air_quality_task, "air_quality_task", 4092, NULL, 5, NULL);
+#endif
 }

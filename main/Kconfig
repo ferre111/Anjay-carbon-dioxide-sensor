@@ -91,6 +91,10 @@ menu "anjay-esp32-client"
             default y if ANJAY_CLIENT_BOARD_M5STICKC_PLUS
             default n
 
+        config ANJAY_CLIENT_AIR_QUALITY_SENSOR
+            bool "Air quality sensor available"
+            default n
+
         menu "Light control options"
             visible if ANJAY_CLIENT_LIGHT_CONTROL
 

@@ -70,7 +70,8 @@ int i2c_master_read_slave_reg(const i2c_device_t *const device,
 
 int i2c_master_write_slave_reg(const i2c_device_t *const device,
                                const uint8_t i2c_reg,
-                               const uint8_t data_wr) {
+                               const uint8_t *data_wr,
+                               const uint32_t size) {
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     if (cmd != NULL) {
         if (i2c_master_start(cmd)) {
@@ -84,7 +85,7 @@ int i2c_master_write_slave_reg(const i2c_device_t *const device,
         if (i2c_master_write_byte(cmd, i2c_reg, I2C_ACK_CHECK_EN)) {
             return -1;
         }
-        if (i2c_master_write(cmd, &data_wr, 1, I2C_ACK_CHECK_EN)) {
+        if (i2c_master_write(cmd, data_wr, size, I2C_ACK_CHECK_EN)) {
             return -1;
         }
         if (i2c_master_stop(cmd)) {

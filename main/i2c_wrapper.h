@@ -34,7 +34,8 @@ int i2c_master_read_slave_reg(const i2c_device_t *const device,
                               const uint8_t size);
 int i2c_master_write_slave_reg(const i2c_device_t *const device,
                                const uint8_t i2c_reg,
-                               const uint8_t data_wr);
+                               const uint8_t *data_wr,
+                               const uint32_t size);
 int i2c_device_init(const i2c_device_t *const device);
 
 #endif /* _I2C_WRAPPER_H_ */

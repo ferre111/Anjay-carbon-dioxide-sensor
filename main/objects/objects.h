@@ -68,3 +68,7 @@ void sensors_install(anjay_t *anjay);
 void sensors_update(anjay_t *anjay);
 void sensors_release(void);
 void sensors_read_data(void);
+
+const anjay_dm_object_def_t **air_quality_object_create(void);
+void air_quality_object_release(const anjay_dm_object_def_t **def);
+void air_quality_update_measurment_val(const anjay_t *anjay, const anjay_dm_object_def_t *const *obj_ptr, const uint16_t val);
