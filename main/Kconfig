@@ -86,6 +86,10 @@ menu "anjay-esp32-client"
             default y if ANJAY_CLIENT_BOARD_M5STICKC_PLUS
             default n
 
+        config ANJAY_CLIENT_HUMIDITY_SENSOR_AVAILABLE
+            bool "Humidity sensor available"
+            default n
+
         config ANJAY_CLIENT_LCD
             bool "LCD is mounted on board"
             default y if ANJAY_CLIENT_BOARD_M5STICKC_PLUS

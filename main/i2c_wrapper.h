@@ -22,6 +22,9 @@
 #define I2C_ACK_CHECK_DIS (0)
 #define I2C_MASTER_PORT I2C_NUM_0
 
+#define I2C_TIMEOUT_MS (1100)
+#define I2C_TIMEOUT_TICKS (I2C_TIMEOUT_MS / portTICK_PERIOD_MS)
+
 typedef struct i2c_device_struct {
     i2c_config_t config;
     uint8_t port;

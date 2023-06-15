@@ -7,8 +7,8 @@
 #if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
 
 #define I2C_ADDRESS_PASCO2      0x28
-#define I2C_SDA_PASCO2          5
-#define I2C_SCL_PASCO2          6
+#define I2C_SDA_PASCO2          21
+#define I2C_SCL_PASCO2          22
 #define I2C_FREQ_PASCO2         400000
 
 #define REG_ADDR_SENS_STS       0x01
@@ -39,14 +39,14 @@ static i2c_device_t pasco2_device = {
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
         .master.clk_speed = I2C_FREQ_PASCO2
     },
-    .port = I2C_NUM_0,
+    .port = I2C_NUM_1,
     .address = I2C_ADDRESS_PASCO2
 };
 
 static int pasco2_check_sts_reg(void) {
     uint8_t reg_val = 0;
     if(i2c_master_read_slave_reg(&pasco2_device, REG_ADDR_SENS_STS, &reg_val, 1U) || SENS_STS_CORRECT_VAL != reg_val) {
-        ESP_LOGI(TAG, "Cannot read PASCO2 sensor status register or wrong statur register value: %d", reg_val);
+        ESP_LOGW(TAG, "Cannot read PASCO2 sensor status register or wrong statur register value: %d", reg_val);
         return -1;
     }
     return 0;
@@ -59,13 +59,8 @@ int pasco2_init(void) {
         return -1;
     }
 
-    for (uint8_t i = 0; i < 10; i++) {
-        if (!pasco2_check_sts_reg()) {
-            break;
-        } else if (i == 9){
-            return -1;
-        }
-        vTaskDelay(pdMS_TO_TICKS(100));
+    if (pasco2_check_sts_reg()) {
+        return -1;
     }
 
     /* without changing pressure compensation registers */
@@ -97,7 +92,7 @@ int pasco2_init(void) {
         return -1;
     }
 
-    //    Continuous mode enable, ABOC enabled, PWM sf disabled
+    // Continuous mode enable, ABOC enabled, PWM sf disabled
     aux = (((1 << 1) & ~(1 << 0)) | ((1 << 2) & ~(1 << 3))) & ~(1 << 5);
 
     if (i2c_master_write_slave_reg(&pasco2_device, REG_ADDR_MEAS_CFG, &aux, 1)) {

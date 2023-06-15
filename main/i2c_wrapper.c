@@ -18,9 +18,6 @@
 #include "driver/i2c.h"
 #include "freertos/FreeRTOS.h"
 
-#define I2C_TIMEOUT_MS (10)
-#define I2C_TIMEOUT_TICKS (I2C_TIMEOUT_MS / portTICK_PERIOD_MS)
-
 int i2c_master_read_slave_reg(const i2c_device_t *const device,
                               const uint8_t i2c_reg,
                               uint8_t *const data_rd,

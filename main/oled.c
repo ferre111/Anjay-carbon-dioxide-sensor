@@ -37,8 +37,8 @@
 
 #define OLED_ADDRESS 0x3C
 
-#define I2C_SDA_OLED 5
-#define I2C_SCL_OLED 6
+#define I2C_SDA_OLED 21
+#define I2C_SCL_OLED 22
 #define I2C_FREQ_OLED 400000
 
 static i2c_device_t oled_device = {
@@ -50,7 +50,7 @@ static i2c_device_t oled_device = {
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
         .master.clk_speed = I2C_FREQ_OLED
     },
-    .port = I2C_NUM_0,
+    .port = I2C_NUM_1,
     .address = OLED_ADDRESS
 };
 
@@ -59,55 +59,53 @@ static i2c_device_t oled_device = {
 
 const uint8_t initSequence[] = {
         OLED_CMD_SetDisplayOFF,
-        0xD5,               // Set display clock
-        0x80,
 
-        0xD3,               // Set Display Offset
-        0x00,
+        0x20,                   // set memory addressing mode
+        0x00,                   // horizontal addressing mode
 
-        0xAD,
-        0x30,
-
-        0x8D,               // Charge Pump Setting
-        0x14,
-
-        0x40,               // Set Display Start Line
-
-        0xA6,               // Set Normal Display
-
-        0xA4,
-
-        0x20,               // set memory addressing mode
-        0x00,               // horizontal addressing mode
-
-        // 0x21,                   // set column address
-        // 27,                     // start 70 -> 28, 98 72 -> 27 99
-        // 99,                     // stop
+        0x21,                   // set column address
+        0x00,                   // start
+        OLED_X_SIZE - 1,        // stop
 
         0x22,                   //set page address
         0x00,                   //start
-        OLED_NUM_OF_PAGES - 1,  //stop
+        0x07,                   //stop
 
-        0xA8,               // Set Multiplex Ratio
-        OLED_Y_SIZE - 1,
+        0xD5,                   // set display clock frequency and prescaler
+        0x80,
 
-        0xA1,               // Set Segment Re-map
-
-        0xC8,               // Set COM Output Scan Direction
-
-        0xDA,               // Set COM Pins Hardware Configuration
-        0x12,
-
-        0x81,               // Set Contrast
-        0xAF,
-
-        0xD9,               // Set Pre-charge Period
+        0xD9,                   // set pre-charge period
         0x22,
 
-        0xDB,               // Set V COMH Deselect Level
-        0x20,
+        0xA8,                   // set MUX ratio
+        0x3F,
 
-        0x2E                // Deactivate Scroll
+        0xD3,                   // set display offset
+        0x00,
+
+        0x40,                   // set display start line
+
+        0xA1,                   // mirror horizontally
+        // 0xA0
+
+        0xC0,                   // set COM scan direction
+
+        0xDA,                   // set com pins hw configuration
+        0x12,
+
+        0x81,                   // set contrast
+        0x9F,
+
+        0xC8,                   // mirror vertically
+        //0xC0
+
+        OLED_CMD_EntireDisplayOnPreserve,
+
+        OLED_CMD_SetNotInversedDisplay,
+
+        OLED_CMD_EnableChargePumpDuringDisplay,
+        0x14,
+        // OLED_CMD_SetDisplayON,
 };
 
 
@@ -194,7 +192,7 @@ typedef struct drawable_T
 // struct for managing OLED. This is not a part of API.
 typedef struct oled_T
 {
-    uint8_t             buffer[128 * 8];
+    uint8_t             buffer[OLED_NUM_OF_PAGES*OLED_X_SIZE];
     drawable            drawables[OLED_MAX_DRAWABLES_COUNT];            // drawable objects
 } oled;
 
@@ -214,7 +212,7 @@ static void sendCommandStream(const uint8_t *stream, uint16_t streamLength)
 {
     assert(streamLength);
 
-    i2c_master_write_slave_reg(&oled_device, 0x00, stream, streamLength);
+    i2c_master_write_slave_reg(&oled_device, 0x01, stream, streamLength);
 }
 
 /* set next column pointer in display driver */
@@ -237,9 +235,9 @@ static void setPixel(uint8_t x, uint8_t y)
 /* clear display buffer content */
 void clearScreen()
 {
-    for(uint8_t v = 0; v < OLED_NUM_OF_PAGES_MAX; v++){
-        for(uint8_t c = 0; c < OLED_X_SIZE_MAX; c++){
-            *(oled_ctx.buffer + v*OLED_X_SIZE_MAX + c) = 0;
+    for(uint8_t v = 0; v < OLED_NUM_OF_PAGES; v++){
+        for(uint8_t c = 0; c < OLED_X_SIZE; c++){
+            *(oled_ctx.buffer + v*OLED_X_SIZE + c) = 0;
         }
     }
 }
@@ -247,6 +245,7 @@ void clearScreen()
 /* print text to buffer */
 static void printText(uint8_t x0, uint8_t y0, char * text, uint8_t size, bool reverse)
 {
+
     if(x0 >= OLED_X_SIZE || (y0 + 8)>= OLED_Y_SIZE)
         return;
 
@@ -254,7 +253,6 @@ static void printText(uint8_t x0, uint8_t y0, char * text, uint8_t size, bool re
     uint8_t v = y0 / 8;
     uint8_t rem = y0 % 8;
     uint8_t y = y0;
-    x0 += 28;
 
     while(text[i] != '\0')
     {
@@ -266,13 +264,13 @@ static void printText(uint8_t x0, uint8_t y0, char * text, uint8_t size, bool re
                 {
                     if(true == reverse)
                     {
-                        *(oled_ctx.buffer + v*OLED_X_SIZE_MAX + x0) |= ~((font_ASCII[text[i] - ' '][j] << rem));
-                        *(oled_ctx.buffer + (v+1U)*OLED_X_SIZE_MAX + x0++) |= ~((font_ASCII[text[i] - ' '][j] >> (8 - rem)));
+                        *(oled_ctx.buffer + v*OLED_X_SIZE + x0) |= ~((font_ASCII[text[i] - ' '][j] << rem));
+                        *(oled_ctx.buffer + (v+1U)*OLED_X_SIZE + x0++) |= ~((font_ASCII[text[i] - ' '][j] >> (8 - rem)));
                     }
                     else
                     {
-                        *(oled_ctx.buffer + v*OLED_X_SIZE_MAX + x0) |= ((font_ASCII[text[i] - ' '][j] << rem));
-                        *(oled_ctx.buffer + (v+1U)*OLED_X_SIZE_MAX + x0++) |= ((font_ASCII[text[i] - ' '][j] >> (8 - rem)));
+                        *(oled_ctx.buffer + v*OLED_X_SIZE + x0) |= ((font_ASCII[text[i] - ' '][j] << rem));
+                        *(oled_ctx.buffer + (v+1U)*OLED_X_SIZE + x0++) |= ((font_ASCII[text[i] - ' '][j] >> (8 - rem)));
                     }
                 }
             }
@@ -282,11 +280,11 @@ static void printText(uint8_t x0, uint8_t y0, char * text, uint8_t size, bool re
                 {
                     if(true == reverse)
                     {
-                        *(oled_ctx.buffer + v*OLED_X_SIZE_MAX + x0++) = ~(font_ASCII[text[i] - ' '][j]);
+                        *(oled_ctx.buffer + v*OLED_X_SIZE + x0++) = ~(font_ASCII[text[i] - ' '][j]);
                     }
                     else
                     {
-                        *(oled_ctx.buffer + v*OLED_X_SIZE_MAX + x0++) = (font_ASCII[text[i] - ' '][j]);
+                        *(oled_ctx.buffer + v*OLED_X_SIZE + x0++) = (font_ASCII[text[i] - ' '][j]);
                     }
                 }
             }
@@ -509,7 +507,6 @@ static void getNextFreeId(uint8_t * id)
             return;
         }
     }
-    return;
 }
 //---------------------------------------------------------------------------------------
 /* API functions */
@@ -520,7 +517,6 @@ void OLED_Init()
     uint8_t i = 0;
 
     i2c_device_init(&oled_device);
-
     /* free all IDs */
     for(i = 0; i < OLED_MAX_DRAWABLES_COUNT; i++)
     {
@@ -566,7 +562,7 @@ void OLED_update()
         }
     }
 
-        i2c_master_write_slave_reg(&oled_device, OLED_CONTROL_BYTE_ | _OLED_DATA | _OLED_MULTIPLE_BYTES, oled_ctx.buffer, OLED_X_SIZE_MAX * OLED_NUM_OF_PAGES);
+    i2c_master_write_slave_reg(&oled_device, OLED_CONTROL_BYTE_ | _OLED_DATA | _OLED_MULTIPLE_BYTES, oled_ctx.buffer, OLED_X_SIZE * OLED_NUM_OF_PAGES);
 }
 
 void OLED_setDisplayOn()
@@ -600,11 +596,12 @@ void OLED_deleteObject(uint8_t id)
 
 
 // === TEXT FIELD ===
-void OLED_createTextField(uint8_t * id, uint8_t x0, uint8_t y0, char* text, uint8_t fontSize, bool reverse)
+int OLED_createTextField(uint8_t * id, uint8_t x0, uint8_t y0, char* text, uint8_t fontSize, bool reverse)
 {
     getNextFreeId(id);
-    if(id == NULL)
-        return;                 // all ids used
+    if(id == NULL) {
+        return -1;                 // all ids used
+    }
 
     oled_ctx.drawables[*id].common.isUsed = 1;
     oled_ctx.drawables[*id].common.type = TEXT_FIELD;
@@ -617,6 +614,8 @@ void OLED_createTextField(uint8_t * id, uint8_t x0, uint8_t y0, char* text, uint
     else
         fontSize = fontSize % 5;
     oled_ctx.drawables[*id].spec.textField.size = fontSize;
+
+    return 0;
 }
 
 void OLED_textFieldSetText(uint8_t id, char * text)
@@ -636,11 +635,12 @@ void OLED_textFieldSetReverse(uint8_t id, bool reverse)
 }
 
 // === LINE ===
-void OLED_createLine(uint8_t * id, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
+int OLED_createLine(uint8_t * id, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
 {
     getNextFreeId(id);
-    if(id == NULL)
-        return;                 // all ids used
+    if(id == NULL) {
+        return -1;                 // all ids used
+    }
 
     oled_ctx.drawables[*id].common.isUsed = 1;
     oled_ctx.drawables[*id].common.type = LINE;
@@ -648,6 +648,8 @@ void OLED_createLine(uint8_t * id, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y
     oled_ctx.drawables[*id].common.y0 = y0;
     oled_ctx.drawables[*id].spec.line.x1 = x1;
     oled_ctx.drawables[*id].spec.line.y1 = y1;
+
+    return 0;
 }
 
 
@@ -662,11 +664,12 @@ void OLED_lineMoveEnd(uint8_t id, uint8_t x1, uint8_t y1)
 }
 
 // === RECTANGLE ===
-void OLED_createRectangle(uint8_t * id,  uint8_t x0, uint8_t y0, uint8_t width, uint8_t height)
+int OLED_createRectangle(uint8_t * id,  uint8_t x0, uint8_t y0, uint8_t width, uint8_t height)
 {
     getNextFreeId(id);
-    if(id == NULL)
-        return;                 // all ids used
+    if(id == NULL) {
+        return -1;                 // all ids used
+    }
 
     oled_ctx.drawables[*id].common.isUsed = 1;
     oled_ctx.drawables[*id].common.type = RECTANGLE;
@@ -674,6 +677,8 @@ void OLED_createRectangle(uint8_t * id,  uint8_t x0, uint8_t y0, uint8_t width, 
     oled_ctx.drawables[*id].common.y0 = y0;
     oled_ctx.drawables[*id].spec.rectangle.width = width;
     oled_ctx.drawables[*id].spec.rectangle.height = height;
+
+    return 0;
 }
 
 void OLED_rectangleSetDimensions(uint8_t id, uint8_t width, uint8_t height)
@@ -683,15 +688,18 @@ void OLED_rectangleSetDimensions(uint8_t id, uint8_t width, uint8_t height)
 }
 
 // === IMAGE ===
-void OLED_createImage(uint8_t * id, uint8_t x0, uint8_t y0, const uint8_t *imageArray)
+int OLED_createImage(uint8_t * id, uint8_t x0, uint8_t y0, const uint8_t * imageArray)
 {
     getNextFreeId(id);
-    if(id == NULL)
-        return;                 // all ids used
+    if(id == NULL) {
+        return -1;                 // all ids used
+    }
 
     oled_ctx.drawables[*id].common.isUsed = 1;
     oled_ctx.drawables[*id].common.type = IMAGE;
     oled_ctx.drawables[*id].common.x0 = x0;
     oled_ctx.drawables[*id].common.y0 = y0;
-    oled_ctx.drawables[*id].spec.image.imageArray = (uint8_t *)imageArray;
+    oled_ctx.drawables[*id].spec.image.imageArray = imageArray;
+
+    return 0;
 }

@@ -18,7 +18,7 @@
 #include <avsystem/commons/avs_memory.h>
 
 #include "pasco2.h"
-#include "oled.h"
+#include "oled_page.h"
 
 #if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
 
@@ -47,11 +47,6 @@ typedef struct air_quality_instance_struct {
     uint32_t air_quality_avr;
     uint16_t current_measurment_array_field;
     bool measurment_buffer_filled;
-
-    uint8_t heading_id;
-    uint8_t meas_text_id;
-    uint8_t ppm_id;
-    char meas_txt[OLED_MAX_CHAR_PER_LINE + 1]; // +1 for null terminator
 } air_quality_instance_t;
 
 typedef struct air_quality_object_struct {
@@ -131,7 +126,13 @@ static int resource_read(anjay_t *anjay,
     switch (rid) {
     case RID_CO2:
         assert(riid == ANJAY_ID_INVALID);
-        result = anjay_ret_double(ctx, (double)inst->air_quality[inst->current_measurment_array_field - 1]);
+        if (!inst->measurment_buffer_filled && inst->current_measurment_array_field == 0) {
+            result = ANJAY_ERR_METHOD_NOT_ALLOWED;
+            break;
+        }
+
+        size_t index = inst->current_measurment_array_field ? (inst->current_measurment_array_field - 1) : PASCO2_NUMBER_OF_MEASURMENTS_PER_HOUR - 1;
+        result = anjay_ret_double(ctx, (double)inst->air_quality[index]);
         break;
 
     case RID_CO2_1_HOUR_AVERAGE:
@@ -183,16 +184,6 @@ const anjay_dm_object_def_t **air_quality_object_create(void) {
     }
 
     pthread_mutexattr_destroy(&attr);
-    pthread_mutex_lock(&obj->mutex);
-
-    air_quality_instance_t *inst = &obj->instances[0];
-
-    OLED_createTextField(&inst->heading_id, 0U, 0U, "CO2: ", 1U, false);
-    snprintf(inst->meas_txt, OLED_MAX_CHAR_PER_LINE + 1, "---");
-    OLED_createTextField(&inst->meas_text_id, 30U, 0U, inst->meas_txt, 1U, false);
-
-    OLED_update();
-    pthread_mutex_unlock(&obj->mutex);
 
     return &obj->def;
 }
@@ -200,13 +191,6 @@ const anjay_dm_object_def_t **air_quality_object_create(void) {
 void air_quality_object_release(const anjay_dm_object_def_t **def) {
     if (def) {
         air_quality_object_t *obj = get_obj(def);
-        pthread_mutex_lock(&obj->mutex);
-        air_quality_instance_t *inst = &obj->instances[0];
-
-        OLED_deleteObject(inst->heading_id);
-        OLED_deleteObject(inst->meas_text_id);
-
-        pthread_mutex_unlock(&obj->mutex);
         pthread_mutex_destroy(&obj->mutex);
         avs_free(obj);
     }
@@ -218,8 +202,7 @@ void air_quality_update_measurment_val(const anjay_t *anjay, const anjay_dm_obje
     pthread_mutex_lock(&obj->mutex);
     air_quality_instance_t *inst = &obj->instances[0];
 
-    snprintf(inst->meas_txt, OLED_MAX_CHAR_PER_LINE + 1, "%"PRIu16, val);
-
+    oled_page_update_co2(val);
     inst->air_quality[inst->current_measurment_array_field++] = val;
 
     if (!(inst->current_measurment_array_field %= PASCO2_NUMBER_OF_MEASURMENTS_PER_HOUR)) {

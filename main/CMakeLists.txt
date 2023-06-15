@@ -21,15 +21,12 @@ set(sources
      "objects/push_button.c"
      "objects/mpu6886.c"
      "objects/sensors.c"
-     "objects/air_quality.c"
      "st7789.c"
      "fontx.c"
      "lcd.c"
      "axp192.c"
      "i2c_wrapper.c"
-     "firmware_update.c"
-     "oled.c"
-     "pasco2.c")
+     "firmware_update.c")
 
 if (CONFIG_ANJAY_SECURITY_MODE_CERTIFICATES)
      set(Embedded_cert "../server_cert.der" "../client_cert.der" "../client_key.der")
@@ -46,6 +43,15 @@ endif()
 if (CONFIG_ANJAY_CLIENT_INTERFACE_ONBOARD_WIFI)
      list(APPEND sources
           "objects/wlan.c")
+endif()
+
+if (CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR)
+     list(APPEND sources
+          "oled.c"
+          "oled_page.c"
+          "pasco2.c"
+          "shtc3.c"
+          "objects/air_quality.c")
 endif()
 
 idf_component_register(SRCS ${sources}

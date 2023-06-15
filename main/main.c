@@ -24,6 +24,7 @@
 #include "sdkconfig.h"
 #include <string.h>
 #include "driver/gpio.h"
+#include "driver/i2c.h"
 
 #include "lwip/dns.h"
 #include "lwip/err.h"
@@ -44,8 +45,10 @@
 #include "lcd.h"
 #include "main.h"
 #include "pasco2.h"
+#include "shtc3.h"
 #include "oled.h"
 #include "objects/objects.h"
+#include "oled_page.h"
 
 #include "firmware_update.h"
 #include "objects/objects.h"
@@ -248,12 +251,22 @@ static void check_and_write_connection_status(anjay_t *anjay) {
 }
 #endif // CONFIG_ANJAY_CLIENT_LCD
 
+#if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+static void check_and_write_connection_status(anjay_t *anjay) {
+    if ((anjay_get_socket_entries(anjay) != NULL) && !anjay_all_connections_failed(anjay) && !anjay_ongoing_registration_exists(anjay)) {
+        oled_avs_icon(true);
+    } else {
+        oled_avs_icon(false);
+    }
+}
+#endif // CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+
 static void update_connection_status_job(avs_sched_t *sched,
                                          const void *anjay_ptr) {
     anjay_t *anjay = *(anjay_t *const *) anjay_ptr;
-#if CONFIG_ANJAY_CLIENT_LCD
+#if defined(CONFIG_ANJAY_CLIENT_LCD) || defined(CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR)
     check_and_write_connection_status(anjay);
-#endif // CONFIG_ANJAY_CLIENT_LCD
+#endif // defined(CONFIG_ANJAY_CLIENT_LCD) || defined(CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR)
 
     static bool connected_prev = true;
     bool err;
@@ -366,13 +379,12 @@ static void air_quality_task(void *pvParameters) {
 
     while(pasco2_init()) {
         avs_log(tutorial, ERROR, "PASCO2 init failed");
-        vTaskDelay(400);
+        vTaskDelay(pdMS_TO_TICKS(2500));
     }
     avs_log(tutorial, INFO, "PASCO2 init done");
 
     for(;;) {
         xSemaphoreTake(GPIOSemaphore, portMAX_DELAY);
-        avs_log(tutorial, INFO, "Przerwańsko occured");
         if (!pasco2_is_measur_rdy()) {
             pasco2_get_measur_val(&co2_val);
             avs_log(tutorial, INFO, "CO2 value: %uppm", co2_val);
@@ -381,10 +393,7 @@ static void air_quality_task(void *pvParameters) {
         } else {
             avs_log(tutorial, INFO, "Measurment not ready");
         }
-        for (uint8_t i = 0; i < 10; i++) {
-            if (!pasco2_reset_int_status_clear()) {
-                break;
-            }
+        while(pasco2_reset_int_status_clear()) {
             vTaskDelay(pdMS_TO_TICKS(100));
         }
     }
@@ -587,8 +596,11 @@ void app_main(void) {
 
     avs_log_set_default_level(AVS_LOG_TRACE);
 
+#if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
     OLED_Init();
     OLED_setDisplayOn();
+    oled_page_init();
+#endif // CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
     anjay_init();
 
 #if CONFIG_ANJAY_CLIENT_LCD
@@ -602,7 +614,7 @@ void app_main(void) {
 
 #if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
     gpio_config_t io_conf = {
-        .pin_bit_mask = (1 << GPIO_NUM_1),
+        .pin_bit_mask = (1 << GPIO_NUM_19),
         //interrupt on falling edge
         .intr_type = GPIO_INTR_DISABLE,
         .mode = GPIO_MODE_INPUT,
@@ -610,13 +622,20 @@ void app_main(void) {
     };
     gpio_config(&io_conf);
 
-    gpio_set_intr_type(GPIO_NUM_1, GPIO_INTR_NEGEDGE);
-    //install gpio isr service
+    gpio_set_intr_type(GPIO_NUM_19, GPIO_INTR_NEGEDGE);
     gpio_install_isr_service(0);
-    //hook isr handler for specific gpio pin
-    gpio_isr_handler_add(GPIO_NUM_1, gpio_isr_handler, NULL);
+    gpio_isr_handler_add(GPIO_NUM_19, gpio_isr_handler, NULL);
 
     vSemaphoreCreateBinary(GPIOSemaphore);
+
+    xTaskCreate(&air_quality_task, "air_quality_task", 4092, NULL, 5, NULL);
+    double temp, humi;
+    if (shtc3_wakeup() || shtc3_get_temp_and_humi_polling(&temp, &humi) || shtc3_sleep()) {
+        avs_log(tutorial, WARNING, "Reading temperature and humidity failed");
+    } else {
+        oled_update_temp(temp);
+        oled_update_humi(humi);
+    }
 #endif
 
 #if defined(CONFIG_ANJAY_CLIENT_INTERFACE_BG96_MODULE)
@@ -657,7 +676,4 @@ void app_main(void) {
 #endif     // CONFIG_ANJAY_CLIENT_LCD
 
     xTaskCreate(&anjay_task, "anjay_task", 16384, NULL, 5, NULL);
-#if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
-    xTaskCreate(&air_quality_task, "air_quality_task", 4092, NULL, 5, NULL);
-#endif
 }

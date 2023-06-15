@@ -29,6 +29,10 @@
 #include "objects/objects.h"
 #include "sdkconfig.h"
 
+#ifdef CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#include "shtc3.h"
+#endif // CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+
 typedef struct {
     const char *name;
     const char *unit;
@@ -84,6 +88,15 @@ static basic_sensor_context_t BASIC_SENSORS_DEF[] = {
         .get_data = temperature_get_data,
     },
 #endif // CONFIG_ANJAY_CLIENT_TEMPERATURE_SENSOR_AVAILABLE
+#ifdef CONFIG_ANJAY_CLIENT_HUMIDITY_SENSOR_AVAILABLE
+    {
+        .name = "Humidity sensor",
+        .unit = "%",
+        .oid = 3304,
+        .read_data = humidity_read_data,
+        .get_data = humidity_get_data,
+    },
+#endif // CONFIG_ANJAY_CLIENT_HUMIDITY_SENSOR_AVAILABLE
 };
 
 int basic_sensor_get_value(anjay_iid_t iid, void *_ctx, double *value) {
