@@ -32,8 +32,8 @@
 #include "freertos/task.h"
 #include "lwip/err.h"
 #include "lwip/sys.h"
-#include "sdkconfig.h"
 #include "oled_page.h"
+#include "sdkconfig.h"
 #include <string.h>
 
 #include "connect.h"
@@ -159,9 +159,9 @@ static void on_wifi_connect(void *esp_netif,
                             esp_event_base_t event_base,
                             int32_t event_id,
                             void *event_data) {
-#if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#    if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
     oled_wifi_icon(true);
-#endif // CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#    endif // CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
     esp_netif_create_ip6_linklocal(esp_netif);
 }
 

@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "driver/gpio.h"
+#include "driver/i2c.h"
 #include "esp_event.h"
 #include "esp_log.h"
 #include "esp_system.h"
@@ -23,8 +25,6 @@
 #include "nvs_flash.h"
 #include "sdkconfig.h"
 #include <string.h>
-#include "driver/gpio.h"
-#include "driver/i2c.h"
 
 #include "lwip/dns.h"
 #include "lwip/err.h"
@@ -44,11 +44,11 @@
 #include "firmware_update.h"
 #include "lcd.h"
 #include "main.h"
+#include "objects/objects.h"
+#include "oled.h"
+#include "oled_page.h"
 #include "pasco2.h"
 #include "shtc3.h"
-#include "oled.h"
-#include "objects/objects.h"
-#include "oled_page.h"
 
 #include "firmware_update.h"
 #include "objects/objects.h"
@@ -253,7 +253,9 @@ static void check_and_write_connection_status(anjay_t *anjay) {
 
 #if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
 static void check_and_write_connection_status(anjay_t *anjay) {
-    if ((anjay_get_socket_entries(anjay) != NULL) && !anjay_all_connections_failed(anjay) && !anjay_ongoing_registration_exists(anjay)) {
+    if ((anjay_get_socket_entries(anjay) != NULL)
+            && !anjay_all_connections_failed(anjay)
+            && !anjay_ongoing_registration_exists(anjay)) {
         oled_avs_icon(true);
     } else {
         oled_avs_icon(false);
@@ -264,9 +266,11 @@ static void check_and_write_connection_status(anjay_t *anjay) {
 static void update_connection_status_job(avs_sched_t *sched,
                                          const void *anjay_ptr) {
     anjay_t *anjay = *(anjay_t *const *) anjay_ptr;
-#if defined(CONFIG_ANJAY_CLIENT_LCD) || defined(CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR)
+#if defined(CONFIG_ANJAY_CLIENT_LCD) \
+        || defined(CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR)
     check_and_write_connection_status(anjay);
-#endif // defined(CONFIG_ANJAY_CLIENT_LCD) || defined(CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR)
+#endif // defined(CONFIG_ANJAY_CLIENT_LCD) ||
+       // defined(CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR)
 
     static bool connected_prev = true;
     bool err;
@@ -377,13 +381,13 @@ static void anjay_task(void *pvParameters) {
 static void air_quality_task(void *pvParameters) {
     uint16_t co2_val = 0;
 
-    while(pasco2_init()) {
+    while (pasco2_init()) {
         avs_log(tutorial, ERROR, "PASCO2 init failed");
         vTaskDelay(pdMS_TO_TICKS(2500));
     }
     avs_log(tutorial, INFO, "PASCO2 init done");
 
-    for(;;) {
+    for (;;) {
         xSemaphoreTake(GPIOSemaphore, portMAX_DELAY);
         if (!pasco2_is_measur_rdy()) {
             pasco2_get_measur_val(&co2_val);
@@ -393,13 +397,13 @@ static void air_quality_task(void *pvParameters) {
         } else {
             avs_log(tutorial, INFO, "Measurment not ready");
         }
-        while(pasco2_reset_int_status_clear()) {
+        while (pasco2_reset_int_status_clear()) {
             vTaskDelay(pdMS_TO_TICKS(100));
         }
     }
 }
 
-static void IRAM_ATTR gpio_isr_handler(void* arg) {
+static void IRAM_ATTR gpio_isr_handler(void *arg) {
     xSemaphoreGiveFromISR(GPIOSemaphore, pdFALSE);
 }
 #endif
@@ -615,7 +619,7 @@ void app_main(void) {
 #if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
     gpio_config_t io_conf = {
         .pin_bit_mask = (1 << GPIO_NUM_19),
-        //interrupt on falling edge
+        // interrupt on falling edge
         .intr_type = GPIO_INTR_DISABLE,
         .mode = GPIO_MODE_INPUT,
         .pull_up_en = true,
@@ -630,7 +634,8 @@ void app_main(void) {
 
     xTaskCreate(&air_quality_task, "air_quality_task", 4092, NULL, 5, NULL);
     double temp, humi;
-    if (shtc3_wakeup() || shtc3_get_temp_and_humi_polling(&temp, &humi) || shtc3_sleep()) {
+    if (shtc3_wakeup() || shtc3_get_temp_and_humi_polling(&temp, &humi)
+            || shtc3_sleep()) {
         avs_log(tutorial, WARNING, "Reading temperature and humidity failed");
     } else {
         oled_update_temp(temp);
