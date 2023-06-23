@@ -99,7 +99,9 @@ static int read_anjay_config();
 #ifdef CONFIG_ANJAY_CLIENT_INTERFACE_ONBOARD_WIFI
 static void change_config_job(avs_sched_t *sched, const void *args_ptr);
 
+#if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 static xSemaphoreHandle GPIOSemaphore = NULL;
+#endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 
 void schedule_change_config() {
     AVS_SCHED_NOW(anjay_get_scheduler(anjay), &change_config_job_handle,
@@ -251,7 +253,7 @@ static void check_and_write_connection_status(anjay_t *anjay) {
 }
 #endif // CONFIG_ANJAY_CLIENT_LCD
 
-#if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 static void check_and_write_connection_status(anjay_t *anjay) {
     if ((anjay_get_socket_entries(anjay) != NULL)
             && !anjay_all_connections_failed(anjay)
@@ -261,16 +263,16 @@ static void check_and_write_connection_status(anjay_t *anjay) {
         oled_avs_icon(false);
     }
 }
-#endif // CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 
 static void update_connection_status_job(avs_sched_t *sched,
                                          const void *anjay_ptr) {
     anjay_t *anjay = *(anjay_t *const *) anjay_ptr;
 #if defined(CONFIG_ANJAY_CLIENT_LCD) \
-        || defined(CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR)
+        || defined(CONFIG_ANJAY_CLIENT_BOARD_PASCO2)
     check_and_write_connection_status(anjay);
 #endif // defined(CONFIG_ANJAY_CLIENT_LCD) ||
-       // defined(CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR)
+       // defined(CONFIG_ANJAY_CLIENT_BOARD_PASCO2)
 
     static bool connected_prev = true;
     bool err;
@@ -377,7 +379,7 @@ static void anjay_task(void *pvParameters) {
     }
 }
 
-#if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 static void air_quality_task(void *pvParameters) {
     uint16_t co2_val = 0;
 
@@ -406,7 +408,7 @@ static void air_quality_task(void *pvParameters) {
 static void IRAM_ATTR gpio_isr_handler(void *arg) {
     xSemaphoreGiveFromISR(GPIOSemaphore, pdFALSE);
 }
-#endif
+#endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 
 static void
 log_handler(avs_log_level_t level, const char *module, const char *msg) {
@@ -600,11 +602,13 @@ void app_main(void) {
 
     avs_log_set_default_level(AVS_LOG_TRACE);
 
-#if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#if CONFIG_ANJAY_CLIENT_OLED
     OLED_Init();
     OLED_setDisplayOn();
+#endif // CONFIG_ANJAY_CLIENT_OLED
+#if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
     oled_page_init();
-#endif // CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
     anjay_init();
 
 #if CONFIG_ANJAY_CLIENT_LCD
@@ -616,7 +620,7 @@ void app_main(void) {
 #    endif // CONFIG_ANJAY_CLIENT_INTERFACE_BG96_MODULE
 #endif     // CONFIG_ANJAY_CLIENT_LCD
 
-#if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
     gpio_config_t io_conf = {
         .pin_bit_mask = (1 << GPIO_NUM_19),
         // interrupt on falling edge
@@ -641,7 +645,7 @@ void app_main(void) {
         oled_update_temp(temp);
         oled_update_humi(humi);
     }
-#endif
+#endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 
 #if defined(CONFIG_ANJAY_CLIENT_INTERFACE_BG96_MODULE)
     while (!setupCellular()) {

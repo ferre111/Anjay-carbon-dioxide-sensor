@@ -17,8 +17,10 @@
 #include <avsystem/commons/avs_defs.h>
 #include <avsystem/commons/avs_memory.h>
 
+#if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 #include "pasco2.h"
 #include "oled_page.h"
+#endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 
 #if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
 
@@ -43,7 +45,7 @@
 #define RID_CO2_1_HOUR_AVERAGE 18
 
 typedef struct air_quality_instance_struct {
-    uint16_t air_quality[PASCO2_NUMBER_OF_MEASURMENTS_PER_HOUR];
+    uint16_t air_quality[CO2_NUMBER_OF_MEASURMENTS_PER_HOUR];
     uint32_t air_quality_avr;
     uint16_t current_measurment_array_field;
     bool measurment_buffer_filled;
@@ -131,7 +133,7 @@ static int resource_read(anjay_t *anjay,
             break;
         }
 
-        size_t index = inst->current_measurment_array_field ? (inst->current_measurment_array_field - 1) : PASCO2_NUMBER_OF_MEASURMENTS_PER_HOUR - 1;
+        size_t index = inst->current_measurment_array_field ? (inst->current_measurment_array_field - 1) : CO2_NUMBER_OF_MEASURMENTS_PER_HOUR - 1;
         result = anjay_ret_double(ctx, (double)inst->air_quality[index]);
         break;
 
@@ -202,18 +204,20 @@ void air_quality_update_measurment_val(const anjay_t *anjay, const anjay_dm_obje
     pthread_mutex_lock(&obj->mutex);
     air_quality_instance_t *inst = &obj->instances[0];
 
+#if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
     oled_page_update_co2(val);
+#endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
     inst->air_quality[inst->current_measurment_array_field++] = val;
 
-    if (!(inst->current_measurment_array_field %= PASCO2_NUMBER_OF_MEASURMENTS_PER_HOUR)) {
+    if (!(inst->current_measurment_array_field %= CO2_NUMBER_OF_MEASURMENTS_PER_HOUR)) {
         inst->measurment_buffer_filled = true;    // the entire table is filled with measurements
     }
 
     inst->air_quality_avr = 0;
-    for (uint32_t meas = 0U; meas < (inst->measurment_buffer_filled ? PASCO2_NUMBER_OF_MEASURMENTS_PER_HOUR : inst->current_measurment_array_field); meas++) {
+    for (uint32_t meas = 0U; meas < (inst->measurment_buffer_filled ? CO2_NUMBER_OF_MEASURMENTS_PER_HOUR : inst->current_measurment_array_field); meas++) {
         inst->air_quality_avr += inst->air_quality[meas];
     }
-    inst->air_quality_avr /= (inst->measurment_buffer_filled ? PASCO2_NUMBER_OF_MEASURMENTS_PER_HOUR : inst->current_measurment_array_field);
+    inst->air_quality_avr /= (inst->measurment_buffer_filled ? CO2_NUMBER_OF_MEASURMENTS_PER_HOUR : inst->current_measurment_array_field);
 
     anjay_notify_changed((anjay_t *) anjay, OID_AIR_QUALITY, 0,
                              RID_CO2);

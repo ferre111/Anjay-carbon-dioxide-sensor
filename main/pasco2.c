@@ -4,7 +4,7 @@
 #include "i2c_wrapper.h"
 #include <anjay/anjay.h>
 
-#if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 
 #    define I2C_ADDRESS_PASCO2 0x28
 #    define I2C_SDA_PASCO2 21
@@ -157,4 +157,4 @@ int pasco2_reset(void) {
     return 0;
 }
 
-#endif
+#endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2

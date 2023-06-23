@@ -11,12 +11,14 @@
 // Brief     :  Sensor Layer: Implementation of functions for sensor access.
 //==============================================================================
 
-#include "shtc3.h"
 
 #include "driver/i2c.h"
 #include "esp_log.h"
 #include "i2c_wrapper.h"
 #include "oled_page.h"
+#include "shtc3.h"
+
+#if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 
 #define CRC_POLYNOMIAL 0x131 // P(x) = x^8 + x^5 + x^4 + 1 = 100110001
 
@@ -255,3 +257,5 @@ static double shtc3_calc_humidity(uint16_t rawValue) {
     // RH = rawValue / 2^16 * 100
     return 100 * (double) rawValue / 65536.0f;
 }
+
+#endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2

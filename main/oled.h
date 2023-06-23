@@ -21,12 +21,15 @@
  * the update() function.
  */
 
+
+#ifndef OLED_H_
+#    define OLED_H_
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#ifndef OLED_H_
-#    define OLED_H_
+#if CONFIG_ANJAY_CLIENT_OLED
 
 // * DEFINES TO BE MODIFIED BY USER */
 #    define OLED_I2C_HANDLE hi2c2
@@ -183,5 +186,7 @@ int OLED_createImage(uint8_t *id,
                      uint8_t x0,
                      uint8_t y0,
                      const uint8_t *imageArray);
+
+#endif // CONFIG_ANJAY_CLIENT_OLED
 
 #endif

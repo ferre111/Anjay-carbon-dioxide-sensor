@@ -3,6 +3,8 @@
 
 #include "oled.h"
 
+#if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
+
 /* +1 for null terminator */
 static char co2_meas_txt[OLED_MAX_CHAR_PER_LINE + 1];
 static char temp_meas_txt[OLED_MAX_CHAR_PER_LINE + 1];
@@ -121,3 +123,5 @@ int oled_page_deinit(void) {
 
     return 0;
 }
+
+#endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2

@@ -4,12 +4,12 @@
  *  Created on: Nov 19, 2020
  *      Author: Wiktor Lechowicz
  */
-#include "oled.h"
 #include "driver/i2c.h"
 #include "i2c_wrapper.h"
-
 #include "ascii_font.h"
+#include "oled.h"
 
+#if CONFIG_ANJAY_CLIENT_OLED
 //---------------------------------------------------------------------------------------
 // DEFINES
 
@@ -645,3 +645,5 @@ int OLED_createImage(uint8_t *id,
 
     return 0;
 }
+
+#endif // CONFIG_ANJAY_CLIENT_OLED

@@ -29,9 +29,9 @@
 #include "objects/objects.h"
 #include "sdkconfig.h"
 
-#ifdef CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 #include "shtc3.h"
-#endif // CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 
 typedef struct {
     const char *name;

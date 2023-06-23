@@ -143,9 +143,9 @@ static void on_wifi_disconnect(void *arg,
                                int32_t event_id,
                                void *event_data) {
     ESP_LOGI(TAG, "Wi-Fi disconnected, trying to reconnect...");
-#if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
     oled_wifi_icon(false);
-#endif // CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
     esp_err_t err = esp_wifi_connect();
     if (err == ESP_ERR_WIFI_NOT_STARTED) {
         return;
@@ -159,9 +159,9 @@ static void on_wifi_connect(void *esp_netif,
                             esp_event_base_t event_base,
                             int32_t event_id,
                             void *event_data) {
-#    if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#    if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
     oled_wifi_icon(true);
-#    endif // CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#    endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
     esp_netif_create_ip6_linklocal(esp_netif);
 }
 

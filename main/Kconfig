@@ -26,6 +26,9 @@ menu "anjay-esp32-client"
 
             config ANJAY_CLIENT_BOARD_M5STICKC_PLUS
                 bool "M5StickC-Plus"
+
+            config ANJAY_CLIENT_BOARD_PASCO2
+                bool "Custom board with CO2 sensor"
         endif
 
         config ANJAY_CLIENT_BOARD_UNKNOWN
@@ -40,6 +43,7 @@ menu "anjay-esp32-client"
             default "Espressif" if ANJAY_CLIENT_BOARD_ESP_WROVER_KIT
             default "Espressif" if ANJAY_CLIENT_BOARD_ESP32_DEVKITC
             default "M5Stack" if ANJAY_CLIENT_BOARD_M5STICKC_PLUS
+            default "Espressif" if ANJAY_CLIENT_BOARD_PASCO2
             default "Unknown"
 
         config ANJAY_CLIENT_MODEL_NUMBER
@@ -47,6 +51,7 @@ menu "anjay-esp32-client"
             default "ESP-WROVER-KIT" if ANJAY_CLIENT_BOARD_ESP_WROVER_KIT
             default "ESP32-DevKitC" if ANJAY_CLIENT_BOARD_ESP32_DEVKITC
             default "M5StickC-Plus" if ANJAY_CLIENT_BOARD_M5STICKC_PLUS
+            default "ESP32-WROOM" if ANJAY_CLIENT_BOARD_PASCO2
             default "Unknown"
 
         config ANJAY_CLIENT_PUSH_BUTTON
@@ -84,10 +89,17 @@ menu "anjay-esp32-client"
         config ANJAY_CLIENT_TEMPERATURE_SENSOR_AVAILABLE
             bool "Temperature sensor available"
             default y if ANJAY_CLIENT_BOARD_M5STICKC_PLUS
+            default y if ANJAY_CLIENT_BOARD_PASCO2
             default n
 
         config ANJAY_CLIENT_HUMIDITY_SENSOR_AVAILABLE
             bool "Humidity sensor available"
+            default y if ANJAY_CLIENT_BOARD_PASCO2
+            default n
+
+        config ANJAY_CLIENT_AIR_QUALITY_SENSOR
+            bool "Air quality sensor available"
+            default y if ANJAY_CLIENT_BOARD_PASCO2
             default n
 
         config ANJAY_CLIENT_LCD
@@ -95,8 +107,9 @@ menu "anjay-esp32-client"
             default y if ANJAY_CLIENT_BOARD_M5STICKC_PLUS
             default n
 
-        config ANJAY_CLIENT_AIR_QUALITY_SENSOR
-            bool "Air quality sensor available"
+        config ANJAY_CLIENT_OLED
+            bool "OLED is mounted on board"
+            default y if ANJAY_CLIENT_BOARD_PASCO2
             default n
 
         menu "Light control options"

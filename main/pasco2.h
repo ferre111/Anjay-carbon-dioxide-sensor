@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #define PASCO2_MEASURMENTS_PERIOD 10 // in seconds
-#define PASCO2_NUMBER_OF_MEASURMENTS_PER_HOUR \
+#define CO2_NUMBER_OF_MEASURMENTS_PER_HOUR \
     3600U / (PASCO2_MEASURMENTS_PERIOD)
 
 int pasco2_init(void);
