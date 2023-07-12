@@ -204,9 +204,6 @@ void air_quality_update_measurment_val(const anjay_t *anjay, const anjay_dm_obje
     pthread_mutex_lock(&obj->mutex);
     air_quality_instance_t *inst = &obj->instances[0];
 
-#if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
-    oled_page_update_co2(val);
-#endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
     inst->air_quality[inst->current_measurment_array_field++] = val;
 
     if (!(inst->current_measurment_array_field %= CO2_NUMBER_OF_MEASURMENTS_PER_HOUR)) {

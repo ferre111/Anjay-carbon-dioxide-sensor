@@ -36,21 +36,21 @@ static const unsigned char wifi_icon[] = { 0x10, 0x10, 0x00, 0x60, 0x30, 0xB0,
                                            0x01, 0x00, 0x00, 0x00 };
 
 int oled_page_init(void) {
-    OLED_createTextField(&co2_heading_id, 42U, 20U, "CO2:", 2U, false);
-    OLED_createTextField(&ppm_id, 107U, 55U, "ppm", 1U, false);
+    oled_create_text_field(&co2_heading_id, 42U, 20U, "CO2:", 2U, false);
+    oled_create_text_field(&ppm_id, 107U, 55U, "ppm", 1U, false);
     snprintf(co2_meas_txt, OLED_MAX_CHAR_PER_LINE + 1, "---");
-    OLED_createTextField(&co2_meas_text_id, 0U, 39U, co2_meas_txt, 3U, false);
+    oled_create_text_field(&co2_meas_text_id, 0U, 39U, co2_meas_txt, 3U, false);
 
-    OLED_createTextField(&temp_heading_id, 0U, 0U, "Temp:", 1U, false);
+    oled_create_text_field(&temp_heading_id, 0U, 0U, "Temp:", 1U, false);
     snprintf(temp_meas_txt, OLED_MAX_CHAR_PER_LINE + 1, "---C");
-    OLED_createTextField(&temp_meas_text_id, 0U, 10U, temp_meas_txt, 1U, false);
+    oled_create_text_field(&temp_meas_text_id, 0U, 10U, temp_meas_txt, 1U, false);
 
-    OLED_createTextField(&humi_heading_id, 99U, 0U, "RH:", 1U, false);
+    oled_create_text_field(&humi_heading_id, 99U, 0U, "RH:", 1U, false);
     snprintf(humi_meas_txt, OLED_MAX_CHAR_PER_LINE + 1, " ---%%");
-    OLED_createTextField(&humi_meas_text_id, 99U, 10U, humi_meas_txt, 1U,
+    oled_create_text_field(&humi_meas_text_id, 99U, 10U, humi_meas_txt, 1U,
                          false);
 
-    OLED_update();
+    oled_update();
 
     return 0;
 }
@@ -58,7 +58,7 @@ int oled_page_init(void) {
 int oled_page_update_co2(uint16_t measurement) {
     snprintf(co2_meas_txt, OLED_MAX_CHAR_PER_LINE + 1, "%" PRIu16, measurement);
 
-    OLED_update();
+    oled_update();
 
     return 0;
 }
@@ -66,7 +66,7 @@ int oled_page_update_co2(uint16_t measurement) {
 int oled_update_temp(double measurement) {
     snprintf(temp_meas_txt, OLED_MAX_CHAR_PER_LINE + 1, "%.1fC", measurement);
 
-    OLED_update();
+    oled_update();
 
     return 0;
 }
@@ -74,7 +74,7 @@ int oled_update_temp(double measurement) {
 int oled_update_humi(double measurement) {
     snprintf(humi_meas_txt, OLED_MAX_CHAR_PER_LINE + 1, "%.1f%%", measurement);
 
-    OLED_update();
+    oled_update();
 
     return 0;
 }
@@ -84,10 +84,10 @@ int oled_avs_icon(bool enable) {
     int ret = 0;
 
     if (enable && !enabled
-            && !(ret = OLED_createImage(&avs_icon_id, 70, 0, avs_icon))) {
+            && !(ret = oled_create_image(&avs_icon_id, 70, 0, avs_icon))) {
         enabled = true;
     } else if (!enable && enabled) {
-        OLED_deleteObject(avs_icon_id);
+        oled_delete_object(avs_icon_id);
         enabled = false;
     }
 
@@ -99,10 +99,10 @@ int oled_wifi_icon(bool enable) {
     int ret = 0;
 
     if (enable && !enabled
-            && !(ret = OLED_createImage(&wifi_icon_id, 40, 0, wifi_icon))) {
+            && !(ret = oled_create_image(&wifi_icon_id, 40, 0, wifi_icon))) {
         enabled = true;
     } else if (!enable && enabled) {
-        OLED_deleteObject(wifi_icon_id);
+        oled_delete_object(wifi_icon_id);
         enabled = false;
     }
 
@@ -110,16 +110,16 @@ int oled_wifi_icon(bool enable) {
 }
 
 int oled_page_deinit(void) {
-    OLED_deleteObject(co2_heading_id);
-    OLED_deleteObject(co2_meas_text_id);
-    OLED_deleteObject(ppm_id);
-    OLED_deleteObject(humi_heading_id);
-    OLED_deleteObject(humi_meas_text_id);
-    OLED_deleteObject(temp_heading_id);
-    OLED_deleteObject(temp_meas_text_id);
+    oled_delete_object(co2_heading_id);
+    oled_delete_object(co2_meas_text_id);
+    oled_delete_object(ppm_id);
+    oled_delete_object(humi_heading_id);
+    oled_delete_object(humi_meas_text_id);
+    oled_delete_object(temp_heading_id);
+    oled_delete_object(temp_meas_text_id);
 
-    OLED_deleteObject(avs_icon_id);
-    OLED_deleteObject(wifi_icon_id);
+    oled_delete_object(avs_icon_id);
+    oled_delete_object(wifi_icon_id);
 
     return 0;
 }

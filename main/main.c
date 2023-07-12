@@ -395,7 +395,8 @@ static void air_quality_task(void *pvParameters) {
             pasco2_get_measur_val(&co2_val);
             avs_log(tutorial, INFO, "CO2 value: %uppm", co2_val);
             air_quality_update_measurment_val(anjay, AIR_QUALITY_OBJ, co2_val);
-            OLED_update();
+            oled_page_update_co2(co2_val);
+            oled_update();
         } else {
             avs_log(tutorial, INFO, "Measurment not ready");
         }
@@ -603,8 +604,8 @@ void app_main(void) {
     avs_log_set_default_level(AVS_LOG_TRACE);
 
 #if CONFIG_ANJAY_CLIENT_OLED
-    OLED_Init();
-    OLED_setDisplayOn();
+    oled_init();
+    oled_set_display_on();
 #endif // CONFIG_ANJAY_CLIENT_OLED
 #if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
     oled_page_init();
@@ -624,13 +625,12 @@ void app_main(void) {
     gpio_config_t io_conf = {
         .pin_bit_mask = (1 << GPIO_NUM_19),
         // interrupt on falling edge
-        .intr_type = GPIO_INTR_DISABLE,
+        .intr_type = GPIO_INTR_NEGEDGE,
         .mode = GPIO_MODE_INPUT,
         .pull_up_en = true,
     };
     gpio_config(&io_conf);
 
-    gpio_set_intr_type(GPIO_NUM_19, GPIO_INTR_NEGEDGE);
     gpio_install_isr_service(0);
     gpio_isr_handler_add(GPIO_NUM_19, gpio_isr_handler, NULL);
 

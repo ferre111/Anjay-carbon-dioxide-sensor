@@ -11,7 +11,7 @@
  *      rendering procedure description
  *
  *      1. User create drawable objects using one of OLED_create... function.
- *      2. In main loop the OLED_update() function must is called at every
+ *      2. In main loop the oled_update() function must is called at every
  * iteration 3a. If transmission of previous buffer is ongoing, do nothing 3b.
  * Else if previous transmission is finished, DMA transmission of buffer updated
  * at previous function call is started. Then buffers are swaped and the new
@@ -59,19 +59,19 @@ enum OLED_Color { WHITE, BLACK };
  * @brief initialize SSD1306 driver according to initSequence
  * @return void
  */
-void OLED_Init();
+void oled_init();
 
 /**
  *  @brief Update display with values from buffer.
  *  @return void
  */
-void OLED_update();
+void oled_update();
 
-void OLED_setDisplayOn();
+void oled_set_display_on();
 
-void OLED_setDisplayOff();
+void oled_set_display_off();
 
-void OLED_setInversed(uint8_t tf);
+void oled_set_inversed(uint8_t tf);
 
 /**
  * @brief set object position
@@ -80,14 +80,14 @@ void OLED_setInversed(uint8_t tf);
  * @param y0 - new y coordniate
  * @retval none
  */
-void OLED_moveObject(uint8_t id, uint8_t x0, uint8_t y0);
+void oled_move_object(uint8_t id, uint8_t x0, uint8_t y0);
 
 /**
  * @brief delete object
  * @param id - object id
  * @retval none
  */
-void OLED_deleteObject(uint8_t id);
+void oled_delete_object(uint8_t id);
 
 // === TEXT FIELD ===
 
@@ -100,7 +100,7 @@ void OLED_deleteObject(uint8_t id);
  * @param reverse - reverse text color (WORKS ONLY WITH SIZE == 1)
  * @retval -1 if failed, 0 otherwise
  */
-int OLED_createTextField(uint8_t *id,
+int oled_create_text_field(uint8_t *id,
                          uint8_t x0,
                          uint8_t y0,
                          char *text,
@@ -113,7 +113,7 @@ int OLED_createTextField(uint8_t *id,
  * @param text - string
  * @retval none
  */
-void OLED_textFieldSetText(uint8_t id, char *text);
+void oled_text_field_set_text(uint8_t id, char *text);
 
 /*
  * @brief set reverse of giben textField
@@ -121,7 +121,7 @@ void OLED_textFieldSetText(uint8_t id, char *text);
  * @param reverse - new reverse value
  * @retval none
  */
-void OLED_textFieldSetReverse(uint8_t id, bool reverse);
+void oled_text_field_set_reverse(uint8_t id, bool reverse);
 
 // === LINE ===
 
@@ -134,7 +134,7 @@ void OLED_textFieldSetReverse(uint8_t id, bool reverse);
  * @param y1 - end point y coordinate
  * @retval -1 if failed, 0 otherwise
  */
-int OLED_createLine(
+int oled_create_line(
         uint8_t *id, uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
 
 /*
@@ -144,7 +144,7 @@ int OLED_createLine(
  * @param y1 - y coordinate
  * @retval void
  */
-void OLED_lineMoveEnd(uint8_t id, uint8_t x1, uint8_t y1);
+void oled_line_move_end(uint8_t id, uint8_t x1, uint8_t y1);
 
 // === RECTANGLE ===
 
@@ -158,7 +158,7 @@ void OLED_lineMoveEnd(uint8_t id, uint8_t x1, uint8_t y1);
  * @param color - BLACK or WHITE
  * @retval -1 if failed, 0 otherwise
  */
-int OLED_createRectangle(
+int oled_create_rectangle(
         uint8_t *id, uint8_t x0, uint8_t y0, uint8_t width, uint8_t height);
 
 /*
@@ -168,7 +168,7 @@ int OLED_createRectangle(
  * @param height
  * @retval void
  */
-void OLED_rectangleSetDimensions(uint8_t id, uint8_t width, uint8_t height);
+void oled_rectangle_set_dimensions(uint8_t id, uint8_t width, uint8_t height);
 
 // === IMAGE ===
 
@@ -182,7 +182,7 @@ void OLED_rectangleSetDimensions(uint8_t id, uint8_t width, uint8_t height);
  * is image height.
  * @retval -1 if failed, 0 otherwise
  */
-int OLED_createImage(uint8_t *id,
+int oled_create_image(uint8_t *id,
                      uint8_t x0,
                      uint8_t y0,
                      const uint8_t *imageArray);
