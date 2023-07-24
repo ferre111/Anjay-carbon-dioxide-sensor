@@ -49,7 +49,7 @@ static int pasco2_check_sts_reg(void) {
                                   1U)
             || SENS_STS_CORRECT_VAL != reg_val) {
         ESP_LOGW(TAG,
-                 "Cannot read PASCO2 sensor status register or wrong statur "
+                 "Cannot read PASCO2 sensor status register or wrong status "
                  "register value: %d",
                  reg_val);
         return -1;
@@ -81,7 +81,7 @@ int pasco2_init(void) {
         return -1;
     }
 
-    vTaskDelay(pdMS_TO_TICKS(400UL));
+    vTaskDelay(pdMS_TO_TICKS(1000UL));
 
     // Set measurment period
     aux = (uint8_t) (PASCO2_MEASURMENTS_PERIOD >> 8);

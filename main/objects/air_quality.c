@@ -10,13 +10,13 @@
  */
 #include <assert.h>
 #include <stdbool.h>
-#include <inttypes.h>
-#include <pthread.h>
 
 #include <anjay/anjay.h>
 #include <avsystem/commons/avs_defs.h>
 #include <avsystem/commons/avs_memory.h>
 
+#include <inttypes.h>
+#include <pthread.h>
 #if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 #include "pasco2.h"
 #include "oled_page.h"
@@ -45,10 +45,10 @@
 #define RID_CO2_1_HOUR_AVERAGE 18
 
 typedef struct air_quality_instance_struct {
-    uint16_t air_quality[CO2_NUMBER_OF_MEASURMENTS_PER_HOUR];
-    uint32_t air_quality_avr;
+    uint16_t carbon_dioxide_level[CO2_NUMBER_OF_MEASURMENTS_PER_HOUR];
+    uint32_t carbon_dioxide_level_avg;
     uint16_t current_measurment_array_field;
-    bool measurment_buffer_filled;
+    bool measurment_array_filled;
 } air_quality_instance_t;
 
 typedef struct air_quality_object_struct {
@@ -72,25 +72,6 @@ static int list_instances(anjay_t *anjay,
     for (anjay_iid_t iid = 0; iid < AVS_ARRAY_SIZE(obj->instances); iid++) {
         anjay_dm_emit(ctx, iid);
     }
-    pthread_mutex_unlock(&obj->mutex);
-    return 0;
-}
-
-static int instance_reset(anjay_t *anjay,
-                          const anjay_dm_object_def_t *const *obj_ptr,
-                          anjay_iid_t iid) {
-    (void) anjay;
-
-    air_quality_object_t *obj = get_obj(obj_ptr);
-    assert(obj);
-
-    pthread_mutex_lock(&obj->mutex);
-    assert(iid < AVS_ARRAY_SIZE(obj->instances));
-    air_quality_instance_t *inst = &obj->instances[iid];
-
-    inst->measurment_buffer_filled = false;
-    inst->current_measurment_array_field = 0;
-    inst->air_quality_avr = 0;
     pthread_mutex_unlock(&obj->mutex);
     return 0;
 }
@@ -128,18 +109,18 @@ static int resource_read(anjay_t *anjay,
     switch (rid) {
     case RID_CO2:
         assert(riid == ANJAY_ID_INVALID);
-        if (!inst->measurment_buffer_filled && inst->current_measurment_array_field == 0) {
+        if (!inst->measurment_array_filled && inst->current_measurment_array_field == 0) {
             result = ANJAY_ERR_METHOD_NOT_ALLOWED;
             break;
         }
 
         size_t index = inst->current_measurment_array_field ? (inst->current_measurment_array_field - 1) : CO2_NUMBER_OF_MEASURMENTS_PER_HOUR - 1;
-        result = anjay_ret_double(ctx, (double)inst->air_quality[index]);
+        result = anjay_ret_double(ctx, (double)inst->carbon_dioxide_level[index]);
         break;
 
     case RID_CO2_1_HOUR_AVERAGE:
         assert(riid == ANJAY_ID_INVALID);
-        result = anjay_ret_double(ctx, (double)inst->air_quality_avr);
+        result = anjay_ret_double(ctx, (double)inst->carbon_dioxide_level_avg);
         break;
 
     default:
@@ -153,16 +134,8 @@ static const anjay_dm_object_def_t OBJ_DEF = {
     .oid = OID_AIR_QUALITY,
     .handlers = {
         .list_instances = list_instances,
-        .instance_reset = instance_reset,
-
         .list_resources = list_resources,
         .resource_read = resource_read,
-        .resource_write = anjay_dm_transaction_NOOP,
-
-        .transaction_begin = anjay_dm_transaction_NOOP,
-        .transaction_validate = anjay_dm_transaction_NOOP,
-        .transaction_commit = anjay_dm_transaction_NOOP,
-        .transaction_rollback = anjay_dm_transaction_NOOP
     }
 };
 
@@ -204,17 +177,17 @@ void air_quality_update_measurment_val(const anjay_t *anjay, const anjay_dm_obje
     pthread_mutex_lock(&obj->mutex);
     air_quality_instance_t *inst = &obj->instances[0];
 
-    inst->air_quality[inst->current_measurment_array_field++] = val;
+    inst->carbon_dioxide_level[inst->current_measurment_array_field++] = val;
 
     if (!(inst->current_measurment_array_field %= CO2_NUMBER_OF_MEASURMENTS_PER_HOUR)) {
-        inst->measurment_buffer_filled = true;    // the entire table is filled with measurements
+        inst->measurment_array_filled = true;    // the entire table is filled with measurements
     }
 
-    inst->air_quality_avr = 0;
-    for (uint32_t meas = 0U; meas < (inst->measurment_buffer_filled ? CO2_NUMBER_OF_MEASURMENTS_PER_HOUR : inst->current_measurment_array_field); meas++) {
-        inst->air_quality_avr += inst->air_quality[meas];
+    inst->carbon_dioxide_level_avg = 0;
+    for (uint32_t meas = 0U; meas < (inst->measurment_array_filled ? CO2_NUMBER_OF_MEASURMENTS_PER_HOUR : inst->current_measurment_array_field); meas++) {
+        inst->carbon_dioxide_level_avg += inst->carbon_dioxide_level[meas];
     }
-    inst->air_quality_avr /= (inst->measurment_buffer_filled ? CO2_NUMBER_OF_MEASURMENTS_PER_HOUR : inst->current_measurment_array_field);
+    inst->carbon_dioxide_level_avg /= (inst->measurment_array_filled ? CO2_NUMBER_OF_MEASURMENTS_PER_HOUR : inst->current_measurment_array_field);
 
     anjay_notify_changed((anjay_t *) anjay, OID_AIR_QUALITY, 0,
                              RID_CO2);

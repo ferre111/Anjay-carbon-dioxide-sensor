@@ -13,8 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "driver/gpio.h"
-#include "driver/i2c.h"
 #include "esp_event.h"
 #include "esp_log.h"
 #include "esp_system.h"
@@ -45,6 +43,8 @@
 #include "lcd.h"
 #include "main.h"
 #include "objects/objects.h"
+#include "driver/gpio.h"
+#include "driver/i2c.h"
 #include "oled.h"
 #include "oled_page.h"
 #include "pasco2.h"
@@ -100,7 +100,7 @@ static int read_anjay_config();
 static void change_config_job(avs_sched_t *sched, const void *args_ptr);
 
 #if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
-static xSemaphoreHandle GPIOSemaphore = NULL;
+static xSemaphoreHandle gpio_semaphore = NULL;
 #endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 
 void schedule_change_config() {
@@ -367,7 +367,7 @@ static void anjay_task(void *pvParameters) {
 #ifdef CONFIG_ANJAY_CLIENT_INTERFACE_BG96_MODULE
     cellular_event_loop_run(anjay);
 #else
-    anjay_event_loop_run(anjay, avs_time_duration_from_scalar(1, AVS_TIME_S));
+    anjay_event_loop_run_with_error_handling(anjay, avs_time_duration_from_scalar(1, AVS_TIME_S));
 #endif // CONFIG_ANJAY_CLIENT_INTERFACE_BG96_MODULE
     avs_sched_del(&sensors_job_handle);
     avs_sched_del(&connection_status_job_handle);
@@ -380,6 +380,10 @@ static void anjay_task(void *pvParameters) {
 }
 
 #if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
+static void IRAM_ATTR gpio_isr_handler(void *arg) {
+    xSemaphoreGiveFromISR(gpio_semaphore, pdFALSE);
+}
+
 static void air_quality_task(void *pvParameters) {
     uint16_t co2_val = 0;
 
@@ -390,13 +394,13 @@ static void air_quality_task(void *pvParameters) {
     avs_log(tutorial, INFO, "PASCO2 init done");
 
     for (;;) {
-        xSemaphoreTake(GPIOSemaphore, portMAX_DELAY);
+        xSemaphoreTake(gpio_semaphore, portMAX_DELAY);
         if (!pasco2_is_measur_rdy()) {
             pasco2_get_measur_val(&co2_val);
             avs_log(tutorial, INFO, "CO2 value: %uppm", co2_val);
-            air_quality_update_measurment_val(anjay, AIR_QUALITY_OBJ, co2_val);
             oled_page_update_co2(co2_val);
             oled_update();
+            air_quality_update_measurment_val(anjay, AIR_QUALITY_OBJ, co2_val);
         } else {
             avs_log(tutorial, INFO, "Measurment not ready");
         }
@@ -404,10 +408,6 @@ static void air_quality_task(void *pvParameters) {
             vTaskDelay(pdMS_TO_TICKS(100));
         }
     }
-}
-
-static void IRAM_ATTR gpio_isr_handler(void *arg) {
-    xSemaphoreGiveFromISR(GPIOSemaphore, pdFALSE);
 }
 #endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 
@@ -609,6 +609,15 @@ void app_main(void) {
 #endif // CONFIG_ANJAY_CLIENT_OLED
 #if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
     oled_page_init();
+
+    double temp, humi;
+    if (shtc3_wakeup() || shtc3_get_temp_and_humi_polling(&temp, &humi)
+            || shtc3_sleep()) {
+        avs_log(tutorial, WARNING, "Reading temperature and humidity failed");
+    } else {
+        oled_update_temp(temp);
+        oled_update_humi(humi);
+    }
 #endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
     anjay_init();
 
@@ -634,17 +643,9 @@ void app_main(void) {
     gpio_install_isr_service(0);
     gpio_isr_handler_add(GPIO_NUM_19, gpio_isr_handler, NULL);
 
-    vSemaphoreCreateBinary(GPIOSemaphore);
+    vSemaphoreCreateBinary(gpio_semaphore);
 
     xTaskCreate(&air_quality_task, "air_quality_task", 4092, NULL, 5, NULL);
-    double temp, humi;
-    if (shtc3_wakeup() || shtc3_get_temp_and_humi_polling(&temp, &humi)
-            || shtc3_sleep()) {
-        avs_log(tutorial, WARNING, "Reading temperature and humidity failed");
-    } else {
-        oled_update_temp(temp);
-        oled_update_humi(humi);
-    }
 #endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 
 #if defined(CONFIG_ANJAY_CLIENT_INTERFACE_BG96_MODULE)

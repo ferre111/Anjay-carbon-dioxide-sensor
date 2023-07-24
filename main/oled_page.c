@@ -82,15 +82,15 @@ int oled_update_humi(double measurement) {
 int oled_avs_icon(bool enable) {
     static bool enabled = false;
     int ret = 0;
-
-    if (enable && !enabled
-            && !(ret = oled_create_image(&avs_icon_id, 70, 0, avs_icon))) {
-        enabled = true;
-    } else if (!enable && enabled) {
-        oled_delete_object(avs_icon_id);
-        enabled = false;
+    if (enable != enabled) {
+        if (enable && !(ret = oled_create_image(&avs_icon_id, 70, 0, avs_icon))) {
+            enabled = true;
+        } else if (!enable) {
+            oled_delete_object(avs_icon_id);
+            enabled = false;
+        }
+        oled_update();
     }
-
     return ret;
 }
 
@@ -98,14 +98,15 @@ int oled_wifi_icon(bool enable) {
     static bool enabled = false;
     int ret = 0;
 
-    if (enable && !enabled
-            && !(ret = oled_create_image(&wifi_icon_id, 40, 0, wifi_icon))) {
-        enabled = true;
-    } else if (!enable && enabled) {
-        oled_delete_object(wifi_icon_id);
-        enabled = false;
+    if (enable != enabled) {
+        if (enable && !(ret = oled_create_image(&wifi_icon_id, 40, 0, wifi_icon))) {
+            enabled = true;
+        } else if (!enable) {
+            oled_delete_object(wifi_icon_id);
+            enabled = false;
+        }
+        oled_update();
     }
-
     return ret;
 }
 
