@@ -43,12 +43,13 @@ int oled_page_init(void) {
 
     oled_create_text_field(&temp_heading_id, 0U, 0U, "Temp:", 1U, false);
     snprintf(temp_meas_txt, OLED_MAX_CHAR_PER_LINE + 1, "---C");
-    oled_create_text_field(&temp_meas_text_id, 0U, 10U, temp_meas_txt, 1U, false);
+    oled_create_text_field(&temp_meas_text_id, 0U, 10U, temp_meas_txt, 1U,
+                           false);
 
     oled_create_text_field(&humi_heading_id, 99U, 0U, "RH:", 1U, false);
     snprintf(humi_meas_txt, OLED_MAX_CHAR_PER_LINE + 1, " ---%%");
     oled_create_text_field(&humi_meas_text_id, 99U, 10U, humi_meas_txt, 1U,
-                         false);
+                           false);
 
     oled_update();
 
@@ -83,7 +84,8 @@ int oled_avs_icon(bool enable) {
     static bool enabled = false;
     int ret = 0;
     if (enable != enabled) {
-        if (enable && !(ret = oled_create_image(&avs_icon_id, 70, 0, avs_icon))) {
+        if (enable
+                && !(ret = oled_create_image(&avs_icon_id, 70, 0, avs_icon))) {
             enabled = true;
         } else if (!enable) {
             oled_delete_object(avs_icon_id);
@@ -99,7 +101,9 @@ int oled_wifi_icon(bool enable) {
     int ret = 0;
 
     if (enable != enabled) {
-        if (enable && !(ret = oled_create_image(&wifi_icon_id, 40, 0, wifi_icon))) {
+        if (enable
+                && !(ret = oled_create_image(&wifi_icon_id, 40, 0,
+                                             wifi_icon))) {
             enabled = true;
         } else if (!enable) {
             oled_delete_object(wifi_icon_id);

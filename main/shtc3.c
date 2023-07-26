@@ -11,7 +11,6 @@
 // Brief     :  Sensor Layer: Implementation of functions for sensor access.
 //==============================================================================
 
-
 #include "driver/i2c.h"
 #include "esp_log.h"
 #include "i2c_wrapper.h"
@@ -20,20 +19,20 @@
 
 #if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 
-#define CRC_POLYNOMIAL 0x131 // P(x) = x^8 + x^5 + x^4 + 1 = 100110001
+#    define CRC_POLYNOMIAL 0x131 // P(x) = x^8 + x^5 + x^4 + 1 = 100110001
 
-#define READ_ID 0xEFC8    // command: read ID register
-#define SOFT_RESET 0x805D // soft reset
-#define SLEEP 0xB098      // sleep
-#define WAKEUP 0x3517     // wakeup
-#define MEAS_T_RH_POLLING \
-    0x7866 // meas. read T first, clock stretching disabled
-#define MEAS_T_RH_CLOCKSTR \
-    0x7CA2 // meas. read T first, clock stretching enabled
-#define MEAS_RH_T_POLLING \
-    0x58E0 // meas. read RH first, clock stretching disabled
-#define MEAS_RH_T_CLOCKSTR \
-    0x5C24 // meas. read RH first, clock stretching enabled
+#    define READ_ID 0xEFC8    // command: read ID register
+#    define SOFT_RESET 0x805D // soft reset
+#    define SLEEP 0xB098      // sleep
+#    define WAKEUP 0x3517     // wakeup
+#    define MEAS_T_RH_POLLING \
+        0x7866 // meas. read T first, clock stretching disabled
+#    define MEAS_T_RH_CLOCKSTR \
+        0x7CA2 // meas. read T first, clock stretching enabled
+#    define MEAS_RH_T_POLLING \
+        0x58E0 // meas. read RH first, clock stretching disabled
+#    define MEAS_RH_T_CLOCKSTR \
+        0x5C24 // meas. read RH first, clock stretching enabled
 
 static const char *TAG = "shtc3";
 
@@ -42,10 +41,10 @@ shtc3_check_crc(uint8_t data[], uint8_t nbrOfBytes, uint8_t checksum);
 static double shtc3_calc_temperature(uint16_t rawValue);
 static double shtc3_calc_humidity(uint16_t rawValue);
 
-#define I2C_ADDRESS_SHTC3 0x70
-#define I2C_SDA_SHTC3 21
-#define I2C_SCL_SHTC3 22
-#define I2C_FREQ_SHTC3 400000
+#    define I2C_ADDRESS_SHTC3 0x70
+#    define I2C_SDA_SHTC3 21
+#    define I2C_SCL_SHTC3 22
+#    define I2C_FREQ_SHTC3 400000
 
 static i2c_device_t shtc3_device = {
     .config = {

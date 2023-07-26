@@ -18,8 +18,8 @@
 #include <inttypes.h>
 #include <pthread.h>
 #if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
-#include "pasco2.h"
-#include "oled_page.h"
+#    include "oled_page.h"
+#    include "pasco2.h"
 #endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 
 #if CONFIG_ANJAY_CLIENT_AIR_QUALITY_SENSOR
@@ -27,14 +27,14 @@
 /**
  * Air quality object ID
  */
-#define OID_AIR_QUALITY 3428
+#    define OID_AIR_QUALITY 3428
 
 /**
  * CO2: R, Single, Optional
  * type: float, range: N/A, unit: ppm
  * Level of carbon dioxide measured by the air quality sensor.
  */
-#define RID_CO2 17
+#    define RID_CO2 17
 
 /**
  * CO2 1 hour average: R, Single, Optional
@@ -42,7 +42,7 @@
  * Average level of carbon dioxide measured by the sensor during the last
  * 1 hour.
  */
-#define RID_CO2_1_HOUR_AVERAGE 18
+#    define RID_CO2_1_HOUR_AVERAGE 18
 
 typedef struct air_quality_instance_struct {
     uint16_t carbon_dioxide_level[CO2_NUMBER_OF_MEASURMENTS_PER_HOUR];
@@ -84,10 +84,9 @@ static int list_resources(anjay_t *anjay,
     (void) obj_ptr;
     (void) iid;
 
-    anjay_dm_emit_res(ctx, RID_CO2,
-                      ANJAY_DM_RES_R, ANJAY_DM_RES_PRESENT);
-    anjay_dm_emit_res(ctx, RID_CO2_1_HOUR_AVERAGE,
-                      ANJAY_DM_RES_R, ANJAY_DM_RES_PRESENT);
+    anjay_dm_emit_res(ctx, RID_CO2, ANJAY_DM_RES_R, ANJAY_DM_RES_PRESENT);
+    anjay_dm_emit_res(ctx, RID_CO2_1_HOUR_AVERAGE, ANJAY_DM_RES_R,
+                      ANJAY_DM_RES_PRESENT);
     return 0;
 }
 
@@ -109,18 +108,22 @@ static int resource_read(anjay_t *anjay,
     switch (rid) {
     case RID_CO2:
         assert(riid == ANJAY_ID_INVALID);
-        if (!inst->measurment_array_filled && inst->current_measurment_array_field == 0) {
+        if (!inst->measurment_array_filled
+                && inst->current_measurment_array_field == 0) {
             result = ANJAY_ERR_METHOD_NOT_ALLOWED;
             break;
         }
 
-        size_t index = inst->current_measurment_array_field ? (inst->current_measurment_array_field - 1) : CO2_NUMBER_OF_MEASURMENTS_PER_HOUR - 1;
-        result = anjay_ret_double(ctx, (double)inst->carbon_dioxide_level[index]);
+        size_t index = inst->current_measurment_array_field
+                               ? (inst->current_measurment_array_field - 1)
+                               : CO2_NUMBER_OF_MEASURMENTS_PER_HOUR - 1;
+        result = anjay_ret_double(ctx,
+                                  (double) inst->carbon_dioxide_level[index]);
         break;
 
     case RID_CO2_1_HOUR_AVERAGE:
         assert(riid == ANJAY_ID_INVALID);
-        result = anjay_ret_double(ctx, (double)inst->carbon_dioxide_level_avg);
+        result = anjay_ret_double(ctx, (double) inst->carbon_dioxide_level_avg);
         break;
 
     default:
@@ -146,7 +149,9 @@ const anjay_dm_object_def_t **air_quality_object_create(void) {
     }
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
 
-    air_quality_object_t *obj = (air_quality_object_t *) avs_calloc(1, sizeof(air_quality_object_t));
+    air_quality_object_t *obj =
+            (air_quality_object_t *) avs_calloc(1,
+                                                sizeof(air_quality_object_t));
     if (!obj) {
         return NULL;
     }
@@ -171,7 +176,10 @@ void air_quality_object_release(const anjay_dm_object_def_t **def) {
     }
 }
 
-void air_quality_update_measurment_val(const anjay_t *anjay, const anjay_dm_object_def_t *const *obj_ptr, const uint16_t val) {
+void air_quality_update_measurment_val(
+        const anjay_t *anjay,
+        const anjay_dm_object_def_t *const *obj_ptr,
+        const uint16_t val) {
     air_quality_object_t *obj = get_obj(obj_ptr);
     assert(obj);
     pthread_mutex_lock(&obj->mutex);
@@ -179,25 +187,33 @@ void air_quality_update_measurment_val(const anjay_t *anjay, const anjay_dm_obje
 
     inst->carbon_dioxide_level[inst->current_measurment_array_field++] = val;
 
-    if (!(inst->current_measurment_array_field %= CO2_NUMBER_OF_MEASURMENTS_PER_HOUR)) {
-        inst->measurment_array_filled = true;    // the entire table is filled with measurements
+    if (!(inst->current_measurment_array_field %=
+          CO2_NUMBER_OF_MEASURMENTS_PER_HOUR)) {
+        inst->measurment_array_filled =
+                true; // the entire table is filled with measurements
     }
 
     inst->carbon_dioxide_level_avg = 0;
-    for (uint32_t meas = 0U; meas < (inst->measurment_array_filled ? CO2_NUMBER_OF_MEASURMENTS_PER_HOUR : inst->current_measurment_array_field); meas++) {
+    for (uint32_t meas = 0U;
+         meas < (inst->measurment_array_filled
+                         ? CO2_NUMBER_OF_MEASURMENTS_PER_HOUR
+                         : inst->current_measurment_array_field);
+         meas++) {
         inst->carbon_dioxide_level_avg += inst->carbon_dioxide_level[meas];
     }
-    inst->carbon_dioxide_level_avg /= (inst->measurment_array_filled ? CO2_NUMBER_OF_MEASURMENTS_PER_HOUR : inst->current_measurment_array_field);
+    inst->carbon_dioxide_level_avg /=
+            (inst->measurment_array_filled
+                     ? CO2_NUMBER_OF_MEASURMENTS_PER_HOUR
+                     : inst->current_measurment_array_field);
+
+    anjay_notify_changed((anjay_t *) anjay, OID_AIR_QUALITY, 0, RID_CO2);
 
     anjay_notify_changed((anjay_t *) anjay, OID_AIR_QUALITY, 0,
-                             RID_CO2);
-
-    anjay_notify_changed((anjay_t *) anjay, OID_AIR_QUALITY, 0,
-                             RID_CO2_1_HOUR_AVERAGE);
+                         RID_CO2_1_HOUR_AVERAGE);
     pthread_mutex_unlock(&obj->mutex);
 }
 
-#else   //ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#else // ANJAY_CLIENT_AIR_QUALITY_SENSOR
 
 const anjay_dm_object_def_t **air_quality_object_create(void) {
     return NULL;
@@ -207,10 +223,13 @@ void air_quality_object_release(const anjay_dm_object_def_t **def) {
     (void) def;
 }
 
-void air_quality_update_measurment_val(const anjay_t *anjay, const anjay_dm_object_def_t *const *obj_ptr, const uint16_t val) {
+void air_quality_update_measurment_val(
+        const anjay_t *anjay,
+        const anjay_dm_object_def_t *const *obj_ptr,
+        const uint16_t val) {
     (void) anjay;
     (void) obj_ptr;
     (void) val;
 }
 
-#endif  //ANJAY_CLIENT_AIR_QUALITY_SENSOR
+#endif // ANJAY_CLIENT_AIR_QUALITY_SENSOR

@@ -21,7 +21,6 @@
  * the update() function.
  */
 
-
 #ifndef OLED_H_
 #    define OLED_H_
 
@@ -101,11 +100,11 @@ void oled_delete_object(uint8_t id);
  * @retval -1 if failed, 0 otherwise
  */
 int oled_create_text_field(uint8_t *id,
-                         uint8_t x0,
-                         uint8_t y0,
-                         char *text,
-                         uint8_t fontSize,
-                         bool reverse);
+                           uint8_t x0,
+                           uint8_t y0,
+                           char *text,
+                           uint8_t fontSize,
+                           bool reverse);
 
 /*
  * @brief set text of given textField
@@ -183,9 +182,9 @@ void oled_rectangle_set_dimensions(uint8_t id, uint8_t width, uint8_t height);
  * @retval -1 if failed, 0 otherwise
  */
 int oled_create_image(uint8_t *id,
-                     uint8_t x0,
-                     uint8_t y0,
-                     const uint8_t *imageArray);
+                      uint8_t x0,
+                      uint8_t y0,
+                      const uint8_t *imageArray);
 
 #endif // CONFIG_ANJAY_CLIENT_OLED
 

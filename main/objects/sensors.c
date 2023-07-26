@@ -30,7 +30,7 @@
 #include "sdkconfig.h"
 
 #if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
-#include "shtc3.h"
+#    include "shtc3.h"
 #endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
 
 typedef struct {

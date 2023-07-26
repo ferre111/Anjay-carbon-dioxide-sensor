@@ -14,31 +14,31 @@
 // DEFINES
 
 // Control byte options
-#define OLED_CONTROL_BYTE_ 0b00000000
-#define _OLED_SINGLE_BYTE 0b10000000
-#define _OLED_MULTIPLE_BYTES 0b00000000
-#define _OLED_COMMAND 0b00000000
-#define _OLED_DATA 0b01000000
+#    define OLED_CONTROL_BYTE_ 0b00000000
+#    define _OLED_SINGLE_BYTE 0b10000000
+#    define _OLED_MULTIPLE_BYTES 0b00000000
+#    define _OLED_COMMAND 0b00000000
+#    define _OLED_DATA 0b01000000
 
 // basic command set
-#define OLED_CMD_EntireDisplayOnPreserve 0xA4
-#define OLED_CMD_EntireDisplayOn 0xA5
-#define OLED_CMD_SetNotInversedDisplay 0xA6
-#define OLED_CMD_SetInversedDisplay 0xA7
-#define OLED_CMD_SetDisplayON 0xAF
-#define OLED_CMD_SetDisplayOFF 0xAE
-#define OLED_CMD_EnableChargePumpDuringDisplay 0x8D
+#    define OLED_CMD_EntireDisplayOnPreserve 0xA4
+#    define OLED_CMD_EntireDisplayOn 0xA5
+#    define OLED_CMD_SetNotInversedDisplay 0xA6
+#    define OLED_CMD_SetInversedDisplay 0xA7
+#    define OLED_CMD_SetDisplayON 0xAF
+#    define OLED_CMD_SetDisplayOFF 0xAE
+#    define OLED_CMD_EnableChargePumpDuringDisplay 0x8D
 
-#define TIMEOUT 100
+#    define TIMEOUT 100
 
-#define FIRST_BUFFER 0
-#define SECOND_BUFFER 1
+#    define FIRST_BUFFER 0
+#    define SECOND_BUFFER 1
 
-#define OLED_ADDRESS 0x3C
+#    define OLED_ADDRESS 0x3C
 
-#define I2C_SDA_OLED 21
-#define I2C_SCL_OLED 22
-#define I2C_FREQ_OLED 400000
+#    define I2C_SDA_OLED 21
+#    define I2C_SCL_OLED 22
+#    define I2C_FREQ_OLED 400000
 
 static i2c_device_t oled_device = {
     .config = {
@@ -479,30 +479,30 @@ void oled_update() {
             switch (oled_ctx.drawables[i].common.type) {
             case TEXT_FIELD:
                 print_text(oled_ctx.drawables[i].common.x0,
-                          oled_ctx.drawables[i].common.y0,
-                          oled_ctx.drawables[i].spec.textField.text,
-                          oled_ctx.drawables[i].spec.textField.size,
-                          oled_ctx.drawables[i].spec.textField.reverse);
+                           oled_ctx.drawables[i].common.y0,
+                           oled_ctx.drawables[i].spec.textField.text,
+                           oled_ctx.drawables[i].spec.textField.size,
+                           oled_ctx.drawables[i].spec.textField.reverse);
                 break;
             case LINE:
                 draw_line(oled_ctx.drawables[i].common.x0,
-                         oled_ctx.drawables[i].common.y0,
-                         oled_ctx.drawables[i].spec.line.x1,
-                         oled_ctx.drawables[i].spec.line.y1);
+                          oled_ctx.drawables[i].common.y0,
+                          oled_ctx.drawables[i].spec.line.x1,
+                          oled_ctx.drawables[i].spec.line.y1);
                 break;
             case RECTANGLE:
                 draw_rect(oled_ctx.drawables[i].common.x0,
-                         oled_ctx.drawables[i].common.y0,
-                         oled_ctx.drawables[i].common.x0
-                                 + oled_ctx.drawables[i].spec.rectangle.width,
-                         oled_ctx.drawables[i].common.y0
-                                 + oled_ctx.drawables[i].spec.rectangle.height,
-                         WHITE);
+                          oled_ctx.drawables[i].common.y0,
+                          oled_ctx.drawables[i].common.x0
+                                  + oled_ctx.drawables[i].spec.rectangle.width,
+                          oled_ctx.drawables[i].common.y0
+                                  + oled_ctx.drawables[i].spec.rectangle.height,
+                          WHITE);
                 break;
             case IMAGE:
                 draw_image(oled_ctx.drawables[i].common.x0,
-                          oled_ctx.drawables[i].common.y0,
-                          oled_ctx.drawables[i].spec.image.imageArray);
+                           oled_ctx.drawables[i].common.y0,
+                           oled_ctx.drawables[i].spec.image.imageArray);
                 break;
             }
         }
@@ -540,11 +540,11 @@ void oled_delete_object(uint8_t id) {
 
 // === TEXT FIELD ===
 int oled_create_text_field(uint8_t *id,
-                         uint8_t x0,
-                         uint8_t y0,
-                         char *text,
-                         uint8_t fontSize,
-                         bool reverse) {
+                           uint8_t x0,
+                           uint8_t y0,
+                           char *text,
+                           uint8_t fontSize,
+                           bool reverse) {
     get_next_free_id(id);
     if (id == NULL) {
         return -1; // all ids used
@@ -629,9 +629,9 @@ void oled_rectangle_set_dimensions(uint8_t id, uint8_t width, uint8_t height) {
 
 // === IMAGE ===
 int oled_create_image(uint8_t *id,
-                     uint8_t x0,
-                     uint8_t y0,
-                     const uint8_t *imageArray) {
+                      uint8_t x0,
+                      uint8_t y0,
+                      const uint8_t *imageArray) {
     get_next_free_id(id);
     if (id == NULL) {
         return -1; // all ids used

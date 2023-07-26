@@ -367,7 +367,8 @@ static void anjay_task(void *pvParameters) {
 #ifdef CONFIG_ANJAY_CLIENT_INTERFACE_BG96_MODULE
     cellular_event_loop_run(anjay);
 #else
-    anjay_event_loop_run_with_error_handling(anjay, avs_time_duration_from_scalar(1, AVS_TIME_S));
+    anjay_event_loop_run_with_error_handling(
+            anjay, avs_time_duration_from_scalar(1, AVS_TIME_S));
 #endif // CONFIG_ANJAY_CLIENT_INTERFACE_BG96_MODULE
     avs_sched_del(&sensors_job_handle);
     avs_sched_del(&connection_status_job_handle);
