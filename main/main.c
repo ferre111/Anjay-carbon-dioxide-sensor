@@ -604,6 +604,17 @@ void app_main(void) {
 
     avs_log_set_default_level(AVS_LOG_TRACE);
 
+    anjay_init();
+
+#if CONFIG_ANJAY_CLIENT_LCD
+    lcd_init();
+#    if defined(CONFIG_ANJAY_CLIENT_INTERFACE_BG96_MODULE)
+    lcd_write_connection_status(LCD_CONNECTION_STATUS_BG96_SETTING);
+#    elif defined(CONFIG_ANJAY_CLIENT_INTERFACE_ONBOARD_WIFI)
+    lcd_write_connection_status(LCD_CONNECTION_STATUS_WIFI_CONNECTING);
+#    endif // CONFIG_ANJAY_CLIENT_INTERFACE_BG96_MODULE
+#endif     // CONFIG_ANJAY_CLIENT_LCD
+
 #if CONFIG_ANJAY_CLIENT_OLED
     oled_init();
     oled_set_display_on();
@@ -619,19 +630,6 @@ void app_main(void) {
         oled_update_temp(temp);
         oled_update_humi(humi);
     }
-#endif // CONFIG_ANJAY_CLIENT_BOARD_PASCO2
-    anjay_init();
-
-#if CONFIG_ANJAY_CLIENT_LCD
-    lcd_init();
-#    if defined(CONFIG_ANJAY_CLIENT_INTERFACE_BG96_MODULE)
-    lcd_write_connection_status(LCD_CONNECTION_STATUS_BG96_SETTING);
-#    elif defined(CONFIG_ANJAY_CLIENT_INTERFACE_ONBOARD_WIFI)
-    lcd_write_connection_status(LCD_CONNECTION_STATUS_WIFI_CONNECTING);
-#    endif // CONFIG_ANJAY_CLIENT_INTERFACE_BG96_MODULE
-#endif     // CONFIG_ANJAY_CLIENT_LCD
-
-#if CONFIG_ANJAY_CLIENT_BOARD_PASCO2
     gpio_config_t io_conf = {
         .pin_bit_mask = (1 << GPIO_NUM_19),
         // interrupt on falling edge
